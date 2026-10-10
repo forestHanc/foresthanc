@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>栈上笔记 · StackNotes</title>
+<meta name="description" content="写给自己的技术笔记：前端、后端与工程实践。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ 设计变量 ============ */
+:root{
+  --font-display:'Fraunces',"Songti SC",Georgia,serif;
+  --font-body:'IBM Plex Sans',-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  --font-mono:'JetBrains Mono',"SFMono-Regular",Consolas,monospace;
+  --maxw:1080px;
+  --radius:16px;
+}
+html[data-theme="dark"]{
+  --bg:#0A0F1A; --surface:#111826; --surface-2:#161F31;
+  --border:rgba(148,163,184,.16); --border-strong:rgba(148,163,184,.32);
+  --text:#F1F5F9; --text-2:#A6B0C0; --text-3:#66748C;
+  --accent:#22D3EE; --accent-2:#60A5FA;
+  --grid:rgba(148,163,184,.055);
+  --code-bg:#0B1220;
+  --shadow:0 24px 60px -28px rgba(0,0,0,.85);
+  --glow:0 0 0 1px rgba(34,211,238,.35), 0 18px 40px -22px rgba(34,211,238,.35);
+}
+html[data-theme="light"]{
+  --bg:#FBFBF8; --surface:#FFFFFF; --surface-2:#F4F5F1;
+  --border:rgba(15,23,42,.10); --border-strong:rgba(15,23,42,.22);
+  --text:#0F172A; --text-2:#556070; --text-3:#8A94A6;
+  --accent:#0E7490; --accent-2:#2563EB;
+  --grid:rgba(15,23,42,.045);
+  --code-bg:#0F172A;
+  --shadow:0 20px 45px -30px rgba(15,23,42,.45);
+  --glow:0 0 0 1px rgba(14,116,144,.3), 0 18px 40px -24px rgba(14,116,144,.3);
+}
+
+/* ============ 基础 ============ */
+*{box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+body{
+  margin:0;font-family:var(--font-body);color:var(--text);
+  background:transparent;-webkit-font-smoothing:antialiased;
+  min-height:100vh;display:flex;flex-direction:column;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(900px 520px at 12% -8%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%),
+    radial-gradient(820px 520px at 92% -4%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 58%),
+    var(--bg);
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.6;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(circle at 50% -10%,#000 0%,transparent 72%);
+  mask-image:radial-gradient(circle at 50% -10%,#000 0%,transparent 72%);
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+::selection{background:color-mix(in srgb,var(--accent) 40%,transparent);color:#fff}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:20px;border:3px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============ 进度条 ============ */
+#progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:100;
+  background:linear-gradient(90deg,var(--accent-2),var(--accent));transition:width .1s linear}
+
+/* ============ 头部 ============ */
+.site-header{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px) saturate(150%);
+  background:color-mix(in srgb,var(--bg) 76%,transparent);border-bottom:1px solid var(--border)}
+.header-inner{max-width:var(--maxw);margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:center;gap:11px;font-family:var(--font-display);font-weight:700;
+  font-size:19px;letter-spacing:-.015em;color:var(--text)}
+.brand .mark{width:30px;height:30px;border-radius:9px;flex:none;
+  background:linear-gradient(140deg,var(--accent),var(--accent-2));
+  display:grid;place-items:center;box-shadow:0 6px 18px -8px var(--accent)}
+.brand .mark svg{width:16px;height:16px;stroke:#04121B;stroke-width:2.4;fill:none}
+.brand small{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.22em;
+  color:var(--text-3);text-transform:uppercase;margin-left:2px;align-self:flex-end;padding-bottom:4px}
+.nav{margin-left:auto;display:flex;align-items:center;gap:6px}
+.nav a{font-family:var(--font-mono);font-size:12.5px;letter-spacing:.04em;color:var(--text-2);
+  padding:8px 12px;border-radius:9px;transition:.18s}
+.nav a:hover{color:var(--text);background:var(--surface-2)}
+.theme-btn{margin-left:6px;width:38px;height:38px;border-radius:11px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text-2);display:grid;place-items:center;cursor:pointer;transition:.2s}
+.theme-btn:hover{color:var(--text);border-color:var(--border-strong);transform:translateY(-1px)}
+.theme-btn svg{width:17px;height:17px}
+
+/* ============ 主体 ============ */
+main{flex:1;width:100%}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+/* ============ Hero ============ */
+.hero{padding:72px 0 40px;animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+.kicker{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.kicker::before{content:'';width:26px;height:1px;background:var(--accent);display:block}
+.hero-title{font-family:var(--font-display);font-weight:600;font-size:clamp(38px,6.4vw,68px);
+  line-height:1.02;letter-spacing:-.03em;margin:0;color:var(--text)}
+.hero-title em{font-style:italic;font-weight:400;
+  background:linear-gradient(100deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{margin:22px 0 0;max-width:560px;font-size:16.5px;line-height:1.7;color:var(--text-2)}
+
+/* ============ 工具栏 ============ */
+.toolbar{padding:12px 0 28px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+  animation:rise .7s .08s cubic-bezier(.2,.7,.2,1) both}
+.search{position:relative;flex:1;min-width:240px;max-width:340px}
+.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:15px;height:15px;
+  stroke:var(--text-3);fill:none;stroke-width:2;pointer-events:none}
+.search input{width:100%;height:42px;padding:0 14px 0 38px;border-radius:11px;
+  background:var(--surface);border:1px solid var(--border);color:var(--text);
+  font-family:var(--font-body);font-size:14px;transition:.2s}
+.search input::placeholder{color:var(--text-3)}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--font-mono);font-size:12px;letter-spacing:.02em;color:var(--text-2);
+  background:var(--surface);border:1px solid var(--border);border-radius:999px;
+  padding:8px 14px;cursor:pointer;transition:.18s}
+.chip:hover{color:var(--text);border-color:var(--border-strong);transform:translateY(-1px)}
+.chip.is-active{color:#04121B;background:linear-gradient(120deg,var(--accent),var(--accent-2));
+  border-color:transparent;font-weight:600}
+html[data-theme="light"] .chip.is-active{color:#fff}
+
+/* ============ 卡片网格 ============ */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+.card{position:relative;display:flex;flex-direction:column;gap:14px;padding:26px 24px 22px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  transition:transform .28s cubic-bezier(.2,.7,.2,1),border-color .28s,box-shadow .28s;
+  animation:rise .6s cubic-bezier(.2,.7,.2,1) both;overflow:hidden}
+.card::after{content:'';position:absolute;inset:0;border-radius:var(--radius);pointer-events:none;
+  background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 45%);opacity:0;transition:.28s}
+.card:hover{transform:translateY(-5px);border-color:color-mix(in srgb,var(--accent) 45%,var(--border));box-shadow:var(--glow)}
+.card:hover::after{opacity:1}
+.card-top{display:flex;flex-wrap:wrap;gap:7px}
+.pill{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--accent);background:color-mix(in srgb,var(--accent) 11%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);border-radius:6px;padding:3px 8px}
+.card-title{font-family:var(--font-display);font-weight:600;font-size:22px;line-height:1.25;
+  letter-spacing:-.02em;margin:0;color:var(--text)}
+.card-excerpt{margin:0;font-size:14.5px;line-height:1.68;color:var(--text-2);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card-meta{margin-top:auto;display:flex;align-items:center;gap:10px;
+  font-family:var(--font-mono);font-size:11.5px;color:var(--text-3)}
+.sep{width:3px;height:3px;border-radius:50%;background:var(--border-strong);flex:none}
+.list-foot{font-family:var(--font-mono);font-size:12px;color:var(--text-3);padding:30px 2px 8px}
+.list-foot b{color:var(--accent)}
+.empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--text-2)}
+.empty-mark{font-family:var(--font-mono);font-size:44px;color:var(--text-3);margin-bottom:14px}
+
+/* ============ 文章页 ============ */
+.post{max-width:740px;margin:0 auto;padding:52px 0 40px;animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+.back{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:12.5px;
+  color:var(--text-3);margin-bottom:30px;transition:.2s}
+.back:hover{color:var(--accent);transform:translateX(-3px)}
+.post-tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px}
+.post-title{font-family:var(--font-display);font-weight:600;font-size:clamp(30px,4.6vw,46px);
+  line-height:1.12;letter-spacing:-.025em;margin:0 0 22px;color:var(--text)}
+.post-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  font-family:var(--font-mono);font-size:12px;color:var(--text-3);
+  padding-bottom:26px;margin-bottom:34px;border-bottom:1px solid var(--border)}
+.post-body{font-size:17px;line-height:1.85;color:var(--text-2)}
+.post-body p{margin:0 0 1.25em}
+.post-body strong{color:var(--text);font-weight:600}
+.post-body h2{font-family:var(--font-display);font-weight:600;font-size:27px;letter-spacing:-.02em;
+  color:var(--text);margin:1.9em 0 .7em;line-height:1.3}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:18px;color:var(--text);margin:1.6em 0 .5em;font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 1.25em;padding-left:1.3em}
+.post-body li{margin:.45em 0}
+.post-body li::marker{color:var(--accent)}
+.post-body blockquote{margin:1.6em 0;padding:6px 0 6px 20px;border-left:2px solid var(--accent);
+  color:var(--text);font-family:var(--font-display);font-style:italic;font-size:19px;line-height:1.6}
+.post-body a{color:var(--accent-2);text-decoration:underline;text-underline-offset:3px}
+.post-body p code,.post-body li code,.post-body h2 code,.post-body h3 code{
+  font-family:var(--font-mono);font-size:.85em;color:var(--accent-2);
+  background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px 6px}
+.post-nav{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:56px;
+  padding-top:28px;border-top:1px solid var(--border)}
+.post-nav a{display:flex;flex-direction:column;gap:7px;padding:16px 18px;border-radius:13px;
+  background:var(--surface);border:1px solid var(--border);transition:.22s}
+.post-nav a:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--border));transform:translateY(-3px)}
+.post-nav a.right{text-align:right;align-items:flex-end}
+.post-nav a span{font-family:var(--font-mono);font-size:11px;color:var(--text-3);letter-spacing:.06em}
+.post-nav a b{font-family:var(--font-display);font-weight:600;font-size:15.5px;line-height:1.35;color:var(--text)}
+
+/* ============ 代码块 ============ */
+.code-block{margin:1.7em 0;border:1px solid var(--border);border-radius:13px;overflow:hidden;
+  background:var(--code-bg);box-shadow:var(--shadow)}
+.code-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:9px 12px 9px 15px;background:rgba(255,255,255,.035);border-bottom:1px solid rgba(255,255,255,.07)}
+.code-lang{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7C8AA5}
+.copy-btn{font-family:var(--font-mono);font-size:11px;color:#9FB0CC;background:transparent;
+  border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:4px 11px;cursor:pointer;transition:.2s}
+.copy-btn:hover{color:#fff;border-color:rgba(255,255,255,.34);background:rgba(255,255,255,.07)}
+.code-block pre{margin:0;padding:17px 19px;overflow-x:auto}
+.code-block code{font-family:var(--font-mono);font-size:13.5px;line-height:1.72;color:#C7D2E5;
+  background:none;border:0;padding:0;white-space:pre}
+.t-kw{color:#82AAFF}.t-str{color:#7EE787}.t-num{color:#FFAB70}.t-fn{color:#22D3EE}
+.t-com{color:#5F6E88;font-style:italic}
+
+/* ============ 页脚 ============ */
+.site-footer{margin-top:60px;border-top:1px solid var(--border);padding:30px 0 40px}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:0 24px;display:flex;flex-wrap:wrap;
+  gap:12px;align-items:center;justify-content:space-between;
+  font-family:var(--font-mono);font-size:11.5px;color:var(--text-3)}
+.footer-inner b{color:var(--text-2);font-weight:500}
+
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto}}
+@media (max-width:640px){
+  .hero{padding:48px 0 30px}
+  .header-inner,.wrap,.footer-inner{padding-left:18px;padding-right:18px}
+  .nav a{padding:8px 9px}
+  .brand small{display:none}
+  .post-nav{grid-template-columns:1fr}
+  .post-nav a.right{text-align:left;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#/">
+      <span class="mark"><svg viewBox="0 0 24 24"><path d="M8 6l-5 6 5 6M16 6l5 6-5 6"/></svg></span>
+      栈上笔记<small>stacknotes</small>
+    </a>
+    <nav class="nav">
+      <a href="#/">文章</a>
+      <a href="#/about">关于</a>
+      <button class="theme-btn" id="themeBtn" type="button" aria-label="切换主题"></button>
+    </nav>
+  </div>
+</header>
+
+<main><div class="wrap" id="app"></div></main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© <b id="year"></b> 栈上笔记 · StackNotes</span>
+    <span>Built with plain HTML / CSS / JS</span>
+  </div>
+</footer>
+
+<script>
+/* ==========================================================================
+   栈上笔记 · 单文件博客  使用说明
+   --------------------------------------------------------------------------
+   1) 改站点名/作者：修改下面 SITE 里的字段即可。
+   2) 加一篇新文章：在 posts 数组最前面加一个对象：
+        {
+          slug : 'url-用的英文短名',        // 唯一，别重复
+          title: '文章标题',
+          date : '2026-10-01',              // 年-月-日
+          read : '6 分钟',                  // 预计阅读时长（自己填）
+          tags : ['前端', 'JavaScript'],    // 用于筛选
+          excerpt: '一两句摘要，显示在卡片上。',
+          body : `这里写正文 HTML`
+        }
+      正文里可用：<p>段落</p> <h2>小标题</h2> <ul><li>列表</li></ul>
+      <blockquote>引用</blockquote>，代码块写成：
+        <pre><code data-lang="js">你的代码</code></pre>
+      注意：代码里的 < > & 要写成 &lt; &gt; &amp;。
+   3) 保存后双击本文件即可在浏览器打开；无需服务器。
+   ========================================================================== */
+
+const SITE = {
+  name: '栈上笔记',
+  en: 'STACKNOTES',
+  tagline: '把踩过的坑、想通的道理、跑得通的代码，都沉淀成一篇能回看的笔记。',
+  author: '站长'
+};
+
+const posts = [
+  {
+    slug:'js-event-loop',
+    title:'JavaScript 事件循环：从 setTimeout 到微任务队列',
+    date:'2026-09-28', read:'7 分钟', tags:['JavaScript','前端'],
+    excerpt:'为什么 setTimeout(fn, 0) 排在 Promise.then 后面？把调用栈、宏任务、微任务这三层关系理清，异步就不再玄学。',
+    body:`
+      <p>刚学 JS 的时候，几乎每个人都写过这样一段代码，然后被输出顺序搞懵：</p>
+      <pre><code data-lang="js">console.log('1 script start');
+
+setTimeout(() =&gt; console.log('4 timeout'), 0);
+
+Promise.resolve().then(() =&gt; console.log('3 microtask'));
+
+console.log('2 script end');
+
+// 实际输出：1 script start / 2 script end / 3 microtask / 4 timeout</code></pre>
+      <p>明明 <code>setTimeout</code> 的延迟写的是 <code>0</code>，为什么它反而排在最后？答案藏在浏览器的事件循环里。</p>
+      <h2>三层结构：栈、宏任务、微任务</h2>
+      <p>JS 是单线程的，同一时刻只能执行一件事。为了不让耗时操作卡住界面，它把任务分成了三类：</p>
+      <ul>
+        <li><strong>调用栈</strong>：当前正在同步执行的代码，执行完立即出栈。</li>
+        <li><strong>宏任务</strong>：<code>setTimeout</code>、<code>setInterval</code>、I/O、UI 渲染等，排在一个队列里。</li>
+        <li><strong>微任务</strong>：<code>Promise.then</code>、<code>queueMicrotask</code>、<code>MutationObserver</code>，优先级更高。</li>
+      </ul>
+      <p>规则其实只有一句话：<strong>每次宏任务执行完，会把当前所有微任务全部清空，然后才轮到下一个宏任务。</strong></p>
+      <h2>回到那段代码</h2>
+      <p>执行过程是这样的：</p>
+      <ol>
+        <li>同步打印 <code>1 script start</code>。</li>
+        <li><code>setTimeout</code> 把回调丢进宏任务队列，先不管它。</li>
+        <li><code>Promise.then</code> 把回调丢进微任务队列。</li>
+        <li>同步打印 <code>2 script end</code>，主线程空了。</li>
+        <li>清空微任务：打印 <code>3 microtask</code>。</li>
+        <li>取下一个宏任务：打印 <code>4 timeout</code>。</li>
+      </ol>
+      <blockquote>记住这句话就够了：微任务永远插队，宏任务永远排队。</blockquote>
+      <h2>一个容易踩的坑</h2>
+      <p>既然微任务会一直清空，那在微任务里再产生微任务，就会形成“微任务饿死宏任务”的情况——页面会卡住不渲染。写递归 Promise 时尤其要小心，必要时用 <code>setTimeout</code> 主动让出主线程。</p>
+      <p>理解了这一层，再看 <code>async/await</code> 就顺了：<code>await</code> 后面的代码，本质上就是被包进了微任务。</p>
+    `
+  },
+  {
+    slug:'css-theme-vars',
+    title:'CSS 变量实战：一套代码搞定深色与浅色主题',
+    date:'2026-09-15', read:'6 分钟', tags:['CSS','前端'],
+    excerpt:'不用两套样式表，也不用 JS 到处改颜色。用 CSS 变量 + 一个 data 属性，主题切换可以做到既干净又好维护。',
+    body:`
+      <p>做主题切换最容易犯的错，是复制一整份 CSS 再手动改颜色。改一次颜色要改两处，迟早会漏。正确做法是把“会变的颜色”抽成变量。</p>
+      <h2>第一步：把颜色抽成变量</h2>
+      <pre><code data-lang="css">:root {
+  --bg: #ffffff;
+  --text: #0f172a;
+  --accent: #0891b2;
+}
+
+html[data-theme="dark"] {
+  --bg: #0a0f1a;
+  --text: #f1f5f9;
+  --accent: #22d3ee;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  transition: background .3s ease, color .3s ease;
+}</code></pre>
+      <p>关键点：变量定义在 <code>:root</code> 和 <code>html[data-theme="dark"]</code> 两个作用域里，后面的规则会覆盖前面的。</p>
+      <h2>第二步：只改一个属性就切换</h2>
+      <pre><code data-lang="js">const root = document.documentElement;
+
+function setTheme(name) {
+  root.setAttribute('data-theme', name);
+  localStorage.setItem('theme', name);
+}
+
+// 记住用户上次的选择
+setTheme(localStorage.getItem('theme') || 'dark');</code></pre>
+      <p>所有组件的样式都只引用变量，切换主题时浏览器会自动重算，你完全不用碰组件代码。</p>
+      <h2>第三步：让过渡不生硬</h2>
+      <p>直接切换会“啪”地一下变脸。给背景和文字加一点 <code>transition</code> 就顺滑了。但要注意：不要在 <code>*</code> 上全局加过渡，滚动时性能会变差，只给颜色相关的属性加即可。</p>
+      <blockquote>原则：结构写死，颜色抽走。以后加第三种主题，也只是多写一个变量块而已。</blockquote>
+    `
+  },
+  {
+    slug:'python-static-blog',
+    title:'用 Python 写一个极简静态博客生成器',
+    date:'2026-08-30', read:'9 分钟', tags:['Python','工具'],
+    excerpt:'30 行代码，把一堆 Markdown 变成能直接托管的静态网页。理解了生成器，你就不再需要任何博客框架。',
+    body:`
+      <p>静态博客的好处是：没有数据库、没有服务器、部署就是传文件。而它的核心原理，其实就是一个“批量转换”脚本。</p>
+      <h2>最小可用版本</h2>
+      <p>思路很朴素：遍历 <code>posts</code> 目录下的每个 Markdown 文件，转成 HTML，写进 <code>public</code> 目录。</p>
+      <pre><code data-lang="py">from pathlib import Path
+import markdown
+
+def build(src, out):
+    out = Path(out)
+    out.mkdir(exist_ok=True)
+    pages = 0
+    for md in Path(src).glob("*.md"):
+        html = markdown.markdown(md.read_text(encoding="utf-8"))
+        (out / (md.stem + ".html")).write_text(html, encoding="utf-8")
+        pages += 1
+    print("done:", pages, "pages")
+
+if __name__ == "__main__":
+    build("posts", "public")</code></pre>
+      <p>跑一次 <code>python build.py</code>，<code>public</code> 目录里就出现了对应的 HTML 文件。</p>
+      <h2>加上文章列表</h2>
+      <p>只有单篇还不够，首页要列出所有文章。做法是先把文件读进一个列表，按日期排序，再拼一段列表 HTML：</p>
+      <pre><code data-lang="py">items = []
+for md in Path(src).glob("*.md"):
+    meta, content = parse(md)          # 解析标题、日期、正文
+    items.append(meta)
+
+items.sort(key=lambda x: x["date"], reverse=True)
+index = render_list(items)
+(out / "index.html").write_text(index, encoding="utf-8")</code></pre>
+      <h2>为什么要自己写一遍</h2>
+      <ul>
+        <li>你会真正搞懂 Hexo、Hugo 这类工具在背后做了什么。</li>
+        <li>出问题时能定位到具体环节，而不是只能搜报错。</li>
+        <li>需要定制（比如自动生成标签页）时，改十几行就行。</li>
+      </ul>
+      <blockquote>框架不是必需品，理解原理才是。写完这一版，你再挑框架会挑得准得多。</blockquote>
+    `
+  },
+  {
+    slug:'npm-slow-fix',
+    title:'npm install 为什么这么慢：镜像与缓存排查指南',
+    date:'2026-08-12', read:'5 分钟', tags:['工程效率','工具'],
+    excerpt:'明明装了千兆宽带，npm install 却要十几分钟。大概率不是网速问题，而是源和缓存。三步排查，立竿见影。',
+    body:`
+      <p>如果 <code>npm install</code> 慢到让人怀疑人生，先别急着换电脑。按下面三步排查，通常能提速好几倍。</p>
+      <h2>第一步：看当前用的什么源</h2>
+      <pre><code data-lang="bash"># 查看当前镜像源
+npm config get registry</code></pre>
+      <p>如果输出是 <code>https://registry.npmjs.org/</code>，那基本就是它拖的后腿——这是国外源，国内访问经常几十 KB/s。</p>
+      <h2>第二步：换成国内镜像</h2>
+      <pre><code data-lang="bash"># 临时为这一次安装指定镜像
+npm install --registry=https://registry.npmmirror.com
+
+# 或者全局改掉，一劳永逸
+npm config set registry https://registry.npmmirror.com</code></pre>
+      <h2>第三步：缓存坏了就清掉重来</h2>
+      <p>有时候不是网慢，而是本地缓存损坏，导致反复重试。这时直接清缓存 + 删依赖重装：</p>
+      <pre><code data-lang="bash">npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install</code></pre>
+      <h2>还有两个提速小技巧</h2>
+      <ul>
+        <li>用 <code>pnpm</code> 或 <code>yarn</code> 替代 npm，它们对依赖的去重和缓存做得更好。</li>
+        <li>在 CI 或团队里锁定 <code>package-lock.json</code>，避免每次解析版本树。</li>
+      </ul>
+      <blockquote>排查顺序永远是：源 → 缓存 → 工具。90% 的“慢”都死在前两步。</blockquote>
+    `
+  },
+  {
+    slug:'git-rescue',
+    title:'Git 救火指南：5 个能救命的命令',
+    date:'2026-07-26', read:'6 分钟', tags:['Git','工程效率'],
+    excerpt:'提交错了、改崩了、分支删了——别慌，Git 几乎不会真的丢东西。这几个命令，能让你从大多数“事故现场”全身而退。',
+    body:`
+      <p>用 Git 最怕的不是不会用，而是出事时慌了手脚，越救越乱。下面这几个命令，建议先收藏再看。</p>
+      <h2>1. 提交信息写错了，但还没推</h2>
+      <pre><code data-lang="bash"># 撤销最近一次提交，但保留所有改动
+git reset --soft HEAD~1
+
+# 改完提交信息后重新提交
+git commit -m "正确的提交信息"</code></pre>
+      <h2>2. 改到一半，突然要切分支处理急事</h2>
+      <pre><code data-lang="bash"># 把当前改动暂存起来
+git stash push -m "wip: 首页改版"
+
+# 处理完急事后切回来
+git stash pop</code></pre>
+      <h2>3. 分支被误删了</h2>
+      <p><code>reflog</code> 记录了 HEAD 的每一次移动，只要提交过，就找得回来：</p>
+      <pre><code data-lang="bash">git reflog
+# 找到那一行的 commit id，然后
+git branch recover-branch 3f9a1c2</code></pre>
+      <h2>4. 想撤销某个文件的改动</h2>
+      <pre><code data-lang="bash"># 只丢弃这个文件的修改
+git checkout -- src/index.js
+
+# 已经 add 了？先取消暂存
+git restore --staged src/index.js</code></pre>
+      <h2>5. 提交到错误分支了</h2>
+      <p>把提交挪到正确分支，再清掉原分支上的这次提交：</p>
+      <pre><code data-lang="bash">git cherry-pick 3f9a1c2        # 在正确分支上捡回来
+git reset --hard HEAD~1        # 在错误分支上回退（确认改动已备份！）</code></pre>
+      <blockquote>最后提醒：<code>--hard</code> 会真的丢改动，用之前务必先确认代码已经提交或备份。</blockquote>
+    `
+  },
+  {
+    slug:'http-cache',
+    title:'从 0 理解 HTTP 缓存：强缓存与协商缓存',
+    date:'2026-07-05', read:'8 分钟', tags:['HTTP','前端'],
+    excerpt:'为什么有的资源刷新很快，有的每次都要问服务器？把强缓存和协商缓存这两件事弄明白，性能优化就有抓手了。',
+    body:`
+      <p>打开控制台看 Network 面板，你可能会看到两种截然不同的状态：一种是从缓存直接读（很快），一种是向服务器发了个请求拿到 <code>304</code>（也不慢，但多了一次往返）。这背后就是两类缓存机制。</p>
+      <h2>强缓存：根本不去问服务器</h2>
+      <p>浏览器如果命中强缓存，会直接从本地读取，连请求都不发。控制方式是响应头：</p>
+      <pre><code data-lang="http">Cache-Control: max-age=31536000, immutable
+ETag: "a1b2c3d4"</code></pre>
+      <p><code>max-age</code> 表示在这段时间内（秒）直接用缓存，<code>immutable</code> 告诉浏览器“这文件永远不会变”，连刷新都不重新请求。</p>
+      <h2>协商缓存：去问一句“变了吗”</h2>
+      <p>强缓存过期后，浏览器会带上标识去问服务器。没变就返回 <code>304</code>，省下传输体积：</p>
+      <pre><code data-lang="http">If-None-Match: "a1b2c3d4"
+
+# 服务器判断没变，返回
+HTTP/1.1 304 Not Modified</code></pre>
+      <h2>实战怎么配</h2>
+      <ul>
+        <li><strong>带 hash 的静态资源</strong>（如 <code>app.3f9a1c.js</code>）：配一年强缓存 + <code>immutable</code>。</li>
+        <li><strong>HTML 入口文件</strong>：配 <code>no-cache</code>，保证每次拿到最新的资源引用。</li>
+        <li><strong>接口数据</strong>：按业务新鲜度设 <code>max-age</code>，或干脆不缓存。</li>
+      </ul>
+      <blockquote>口诀：内容变、文件名就变 → 强缓存拉满；文件名不变 → 用协商缓存兜底。</blockquote>
+    `
+  }
+];
+
+/* ============================ 逻辑 ============================ */
+const app = document.getElementById('app');
+const state = { tag:'all', q:'' };
+
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* --- 轻量语法高亮（无需外部库） --- */
+const KW = {
+  js:'const let var function return if else for while do switch case break continue await async import export from default class extends new try catch finally throw typeof instanceof of in this null undefined true false delete yield static get set',
+  py:'def return if elif else for while import from as class try except finally with lambda None True False and or not in is pass break continue raise yield global nonlocal assert del print',
+  bash:'if then else fi for while do done case esac function return export local echo cd npm git rm mkdir sudo cat',
+  css:'',
+  generic:'true false null undefined function return if else for while class new import export'
+};
+const RE_SLASH = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")|(\b\d[\d_]*(?:\.\d+)?\b)|([A-Za-z_$][A-Za-z0-9_$]*)(?=\s*\()|([A-Za-z_$][A-Za-z0-9_$]*)/g;
+const RE_HASH  = /(#[^\n]*)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")|(\b\d[\d_]*(?:\.\d+)?\b)|([A-Za-z_$][A-Za-z0-9_$]*)(?=\s*\()|([A-Za-z_$][A-Za-z0-9_$]*)/g;
+const RE_CSS   = /(\/\*[\s\S]*?\*\/)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")|(\b\d[\d_]*(?:\.\d+)?\b)|([A-Za-z_$][A-Za-z0-9_$]*)(?=\s*\()|([A-Za-z_$][A-Za-z0-9_$]*)/g;
+const HASH_LANGS = ['py','python','bash','sh','shell','http','yaml','conf','toml'];
+
+function highlight(code, lang){
+  const kw = new Set((KW[lang] || KW.generic).split(' ').filter(Boolean));
+  const re = lang === 'css' ? RE_CSS : (HASH_LANGS.includes(lang) ? RE_HASH : RE_SLASH);
+  re.lastIndex = 0;
+  let out = '', last = 0, m;
+  while((m = re.exec(code))){
+    out += esc(code.slice(last, m.index));
+    if(m[1])      out += '<span class="t-com">' + esc(m[1]) + '</span>';
+    else if(m[2]) out += '<span class="t-str">' + esc(m[2]) + '</span>';
+    else if(m[3]) out += '<span class="t-num">' + esc(m[3]) + '</span>';
+    else if(m[4]) out += '<span class="t-fn">'  + esc(m[4]) + '</span>';
+    else if(m[5]) out += kw.has(m[5]) ? '<span class="t-kw">' + esc(m[5]) + '</span>' : esc(m[5]);
+    last = re.lastIndex;
+  }
+  return out + esc(code.slice(last));
+}
+
+function enhanceCode(root){
+  root.querySelectorAll('pre > code').forEach(codeEl => {
+    const pre = codeEl.parentElement;
+    if(pre.dataset.ready) return;
+    const lang = codeEl.dataset.lang || 'code';
+    const raw = codeEl.textContent;
+    codeEl.innerHTML = highlight(raw, lang);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'code-block';
+    const bar = document.createElement('div');
+    bar.className = 'code-bar';
+    const label = document.createElement('span');
+    label.className = 'code-lang';
+    label.textContent = lang;
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.type = 'button';
+    btn.textContent = '复制';
+    btn.addEventListener('click', async () => {
+      try{
+        await navigator.clipboard.writeText(raw);
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = '复制'; }, 1400);
+      }catch(e){ btn.textContent = '复制失败'; }
+    });
+    bar.append(label, btn);
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.append(bar, pre);
+    pre.dataset.ready = '1';
+  });
+}
+
+/* --- 工具 --- */
+const fmtDate = d => { const p = d.split('-'); return p[0] + ' 年 ' + (+p[1]) + ' 月 ' + (+p[2]) + ' 日'; };
+const allTags = () => [...new Set(posts.flatMap(p => p.tags))];
+
+function filtered(){
+  const q = state.q.trim().toLowerCase();
+  return posts.filter(p => {
+    const tagOk = state.tag === 'all' || p.tags.includes(state.tag);
+    const qOk = !q || (p.title + p.excerpt + p.tags.join(' ')).toLowerCase().includes(q);
+    return tagOk && qOk;
+  });
+}
+
+function cardHTML(p, i){
+  const tags = p.tags.map(t => '<span class="pill">' + esc(t) + '</span>').join('');
+  return '<a class="card" href="#/post/' + p.slug + '" style="animation-delay:' + (i * 55) + 'ms">' +
+    '<div class="card-top">' + tags + '</div>' +
+    '<h3 class="card-title">' + esc(p.title) + '</h3>' +
+    '<p class="card-excerpt">' + esc(p.excerpt) + '</p>' +
+    '<div class="card-meta"><time>' + fmtDate(p.date) + '</time>' +
+    '<span class="sep"></span><span>' + esc(p.read) + '阅读</span></div></a>';
+}
+
+function chipsHTML(){
+  const tags = ['all', ...allTags()];
+  return tags.map(t => {
+    const active = state.tag === t ? ' is-active' : '';
+    return '<button class="chip' + active + '" data-tag="' + esc(t) + '" type="button">' +
+      (t === 'all' ? '全部' : esc(t)) + '</button>';
+  }).join('');
+}
+
+function updateGrid(){
+  const grid = document.getElementById('grid');
+  if(!grid) return;
+  const list = filtered();
+  grid.innerHTML = list.length
+    ? list.map(cardHTML).join('')
+    : '<div class="empty"><div class="empty-mark">404</div><p>没有匹配的文章，换个关键词或标签试试。</p></div>';
+  const c = document.getElementById('count');
+  if(c) c.textContent = list.length;
+}
+
+/* --- 页面渲染 --- */
+function renderList(){
+  app.innerHTML =
+    '<section class="hero">' +
+      '<div class="kicker">TECH · NOTES · ' + posts.length + ' ARTICLES</div>' +
+      '<h1 class="hero-title">写给自己的<br><em>技术笔记</em></h1>' +
+      '<p class="hero-sub">' + esc(SITE.tagline) + '</p>' +
+    '</section>' +
+    '<section class="toolbar">' +
+      '<div class="search">' +
+        '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>' +
+        '<input id="q" type="search" placeholder="搜索标题、摘要或标签…" value="' + esc(state.q) + '">' +
+      '</div>' +
+      '<div class="chips" id="chips">' + chipsHTML() + '</div>' +
+    '</section>' +
+    '<section class="grid" id="grid"></section>' +
+    '<div class="list-foot">共 <b id="count">0</b> 篇笔记</div>';
+
+  const input = document.getElementById('q');
+  input.addEventListener('input', () => { state.q = input.value; updateGrid(); });
+  document.getElementById('chips').addEventListener('click', e => {
+    const b = e.target.closest('.chip');
+    if(!b) return;
+    state.tag = b.dataset.tag;
+    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('is-active', c.dataset.tag === state.tag));
+    updateGrid();
+  });
+  updateGrid();
+}
+
+function renderPost(slug){
+  const i = posts.findIndex(p => p.slug === slug);
+  if(i < 0){ renderList(); return; }
+  const p = posts[i];
+  const older = posts[i + 1];
+  const newer = posts[i - 1];
+
+  const navPrev = older
+    ? '<a href="#/post/' + older.slug + '"><span>← 更早</span><b>' + esc(older.title) + '</b></a>'
+    : '<span></span>';
+  const navNext = newer
+    ? '<a class="right" href="#/post/' + newer.slug + '"><span>更新 →</span><b>' + esc(newer.title) + '</b></a>'
+    : '<span></span>';
+
+  app.innerHTML =
+    '<article class="post">' +
+      '<a class="back" href="#/">← 返回文章列表</a>' +
+      '<div class="post-tags">' + p.tags.map(t => '<span class="pill">' + esc(t) + '</span>').join('') + '</div>' +
+      '<h1 class="post-title">' + esc(p.title) + '</h1>' +
+      '<div class="post-meta"><time>' + fmtDate(p.date) + '</time><span class="sep"></span>' +
+        '<span>' + esc(p.read) + '阅读</span><span class="sep"></span><span>' + esc(SITE.author) + '</span></div>' +
+      '<div class="post-body">' + p.body + '</div>' +
+      '<nav class="post-nav">' + navPrev + navNext + '</nav>' +
+    '</article>';
+
+  enhanceCode(app.querySelector('.post-body'));
+  document.title = p.title + ' · ' + SITE.name;
+  window.scrollTo(0, 0);
+}
+
+function renderAbout(){
+  app.innerHTML =
+    '<article class="post">' +
+      '<a class="back" href="#/">← 返回文章列表</a>' +
+      '<h1 class="post-title">关于这个博客</h1>' +
+      '<div class="post-body">' +
+        '<p>这里是我的<strong>技术笔记本</strong>。写下来的目的很单纯：把零散的知识点、踩过的坑、跑通的代码，整理成能回看、能复用的形式。</p>' +
+        '<p>内容主要覆盖三块：</p>' +
+        '<ul><li><strong>前端</strong>：JavaScript、CSS、浏览器原理。</li>' +
+        '<li><strong>工程效率</strong>：工具链、Git、构建与部署。</li>' +
+        '<li><strong>后端 / 通用</strong>：HTTP、脚本与自动化。</li></ul>' +
+        '<p>整个站点是<strong>一个 HTML 文件</strong>，没有框架、没有构建步骤，双击就能在浏览器里打开，也可以直接扔到任意静态托管上。</p>' +
+        '<blockquote>写作是最好的学习方式。能讲清楚，才算真懂。</blockquote>' +
+      '</div>' +
+    '</article>';
+  document.title = '关于 · ' + SITE.name;
+  window.scrollTo(0, 0);
+}
+
+/* --- 路由 --- */
+function route(){
+  const h = location.hash.replace(/^#\/?/, '');
+  if(h.startsWith('post/')) renderPost(h.slice(5));
+  else if(h === 'about') renderAbout();
+  else { renderList(); document.title = SITE.name + ' · ' + SITE.en; }
+  updateProgress();
+}
+window.addEventListener('hashchange', route);
+
+/* --- 主题切换 --- */
+const root = document.documentElement;
+const themeBtn = document.getElementById('themeBtn');
+const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.2 8.2 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5z"/></svg>';
+function paintIcon(){
+  themeBtn.innerHTML = root.getAttribute('data-theme') === 'dark' ? SUN : MOON;
+  themeBtn.setAttribute('aria-label', root.getAttribute('data-theme') === 'dark' ? '切换到浅色主题' : '切换到深色主题');
+}
+function setTheme(t){
+  root.setAttribute('data-theme', t);
+  try{ localStorage.setItem('sn-theme', t); }catch(e){}
+  paintIcon();
+}
+let saved = null;
+try{ saved = localStorage.getItem('sn-theme'); }catch(e){}
+setTheme(saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+themeBtn.addEventListener('click', () => {
+  setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+
+/* --- 阅读进度 --- */
+function updateProgress(){
+  const doc = document.documentElement;
+  const max = doc.scrollHeight - doc.clientHeight;
+  document.getElementById('progress').style.width = (max > 0 ? (doc.scrollTop / max) * 100 : 0) + '%';
+}
+window.addEventListener('scroll', updateProgress, { passive:true });
+window.addEventListener('resize', updateProgress);
+
+/* --- 启动 --- */
+document.getElementById('year').textContent = new Date().getFullYear();
+route();
+</script>
+</body>
+</html>
